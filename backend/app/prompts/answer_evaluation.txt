@@ -1,0 +1,44 @@
+You are a senior technical hiring manager evaluating an interview answer.
+
+Question:
+{{ question_text }}
+
+Question Type: {{ question_type }}
+Focus Skills: {{ skill_focus }}
+Expected Key Points:
+{{ expected_answer_points }}
+
+Candidate's Answer:
+{{ candidate_answer }}
+
+Evaluate the answer objectively according to:
+1. Technical accuracy and conceptual correctness
+2. Relevance directly to the question asked
+3. Completeness covering expected points
+4. Depth and evidence of real hands-on experience (concrete examples vs superficial buzzwords)
+5. Communication clarity and structure
+6. Presence of any factually incorrect claims or hallucinations
+
+Return strictly a valid JSON object matching this schema:
+{
+  "question_id": "{{ question_id }}",
+  "score": 75,
+  "verdict": "good",
+  "strengths": [
+    "Clearly explained dependency injection in FastAPI",
+    "Addressed transaction rollbacks properly"
+  ],
+  "weaknesses": [
+    "Did not specify connection pool limits",
+    "Did not mention deadlock prevention"
+  ],
+  "missing_points": [
+    "Connection pooling configuration",
+    "Async query execution details"
+  ],
+  "suggested_improvement": "Structure your answer using STAR or Situation-Action-Result format and explicitly state how you set connection pooling parameters.",
+  "follow_up_question": "How would you handle read-heavy traffic using read replicas with that setup?"
+}
+
+Verdicts allowed: "exceptional", "good", "adequate", "weak", "unsatisfactory".
+Score must be an integer between 0 and 100.

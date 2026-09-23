@@ -1,0 +1,17 @@
+You are a principal talent analyst. Synthesize the skill alignment between the candidate resume and the job description into a clear, actionable gap summary.
+
+Target Job Title: {{ target_role }}
+Seniority: {{ seniority }}
+Matched Skills: {{ matched_skills }}
+Weak Evidence Skills: {{ weak_skills }}
+Missing JD Skills: {{ missing_skills }}
+Related Transferable Skills: {{ related_partial_skills }}
+Extra Resume Skills: {{ extra_resume_skills }}
+
+Provide an explainable evaluation in valid JSON adhering strictly to:
+{
+  "overall_readiness": "high | moderate | low",
+  "critical_missing_skills": ["Skill1", "Skill2"],
+  "quick_wins": ["Actionable quick resume or profile fix 1", "Actionable quick fix 2"],
+  "narrative_summary": "Comprehensive 2-3 paragraph breakdown explaining the candidate's alignment, where transferable skills bridge gaps, and key areas of exposure."
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "jd-backend-standard",
+    "title": "Senior Backend Developer",
+    "company": "CloudWave Technologies",
+    "raw_text": "\nCloudWave Technologies is hiring a Senior Backend Developer.\n\nAbout the Role:\nWe are looking for an experienced Senior Backend Developer to join our core platform engineering team.\nYou will architect, build, and deploy mission-critical microservices and database pipelines.\n\nRequirements:\n* 4+ years of professional software engineering experience.\n* Proficiency in Python and FastAPI (or modern Python web framework).\n* Strong relational database expertise with PostgreSQL and complex SQL queries.\n* Hands-on experience with Docker, containerization, and automated CI/CD workflows.\n* Familiarity with version control using Git.\n\nPreferred Qualifications:\n* Experience with Kubernetes container orchestration.\n* Knowledge of Amazon Web Services (AWS) cloud architecture.\n* Understanding of System Design for scalable distributed services.\n* Experience with caching layers such as Redis.\n\nResponsibilities:\n* Design scalable REST APIs and high-throughput background processing services.\n* Collaborate closely with product managers and frontend teams.\n* Conduct architecture reviews and mentor junior developers.\n"
+  },
+  {
+    "id": "jd-short-minimal",
+    "title": "Python Developer",
+    "company": "FastStartup",
+    "raw_text": "Looking for Python developer to write backend code in FastAPI and PostgreSQL with Docker."
+  },
+  {
+    "id": "jd-no-explicit-skills",
+    "title": "Technical Problem Solver",
+    "company": "InnovateCo",
+    "raw_text": "Join our collaborative team to solve tough customer problems, write reliable software, and deliver results."
+  }
+]

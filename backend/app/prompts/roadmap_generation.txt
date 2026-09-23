@@ -1,0 +1,45 @@
+You are an elite executive career strategist and technical coach.
+Create an actionable, highly customized career-improvement roadmap for a candidate aiming for: {{ target_role }}.
+
+Analysis Context:
+- Overall Match Score: {{ overall_score }}
+- Critical Missing Skills: {{ missing_skills }}
+- Weak Evidence Skills: {{ weak_skills }}
+- Transferable Skills: {{ related_skills }}
+- Candidate Current Experience: {{ experience_summary }}
+- Interview Weaknesses: {{ interview_weaknesses }}
+
+Provide a structured, prioritized growth roadmap in valid JSON:
+{
+  "immediate_resume_improvements": [
+    "Concrete tweak to bullet points or metrics on current projects",
+    "Highlight specific transferable skills in summary"
+  ],
+  "short_term_learning_actions": [
+    {
+      "topic": "Skill or tool to learn",
+      "timeframe": "2-4 weeks",
+      "recommended_resources": ["Official docs", "Key tutorials or courses"],
+      "learning_objective": "What practical capability to master"
+    }
+  ],
+  "project_suggestions": [
+    {
+      "project_title": "Title of targeted portfolio project",
+      "technologies": ["Tech 1", "Tech 2"],
+      "problem_statement": "Real-world engineering challenge to solve",
+      "demonstrated_outcomes": ["Measurable outcome to prove hands-on mastery"]
+    }
+  ],
+  "certification_suggestions": [
+    {
+      "certification_name": "Industry credential",
+      "issuer": "Issuing body",
+      "relevance": "Why this bridges the gap for this target role"
+    }
+  ],
+  "interview_preparation_focus_areas": [
+    "System design topic or behavioral competency to drill",
+    "Specific architecture or algorithm area"
+  ]
+}
