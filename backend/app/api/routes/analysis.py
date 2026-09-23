@@ -32,6 +32,10 @@ from app.services.role_matcher import RoleMatcherService
 from app.services.role_profile_loader import RoleProfileLoader
 from app.services.interview_service import InterviewService
 from app.services.llm_client import BaseLLMClient
+from app.services.skill_gap_service import SkillGapService
+from app.services.learning_roadmap_service import LearningRoadmapService
+from app.schemas.gap_analysis import SkillGapAnalysisResponse
+from app.schemas.learning_roadmap import PersonalizedRoadmapResponse
 
 router = APIRouter(prefix="/analysis", tags=["Skill Gap Analysis"])
 
@@ -194,6 +198,34 @@ async def run_role_fit_with_interview(
         jd_data=role_jd_data
     )
 
+    # Compute role-aware, resume-grounded skill gap analysis
+    skill_gap_service = SkillGapService()
+    gap_analysis = skill_gap_service.analyze_skill_gaps(
+        role_key=role.role_key,
+        display_name=role.display_name,
+        seniority=role.seniority or "mid",
+        domain=role.domain or "software_engineering",
+        required_skills=role.required_skills or [],
+        preferred_skills=role.preferred_skills or [],
+        resume_data=resume_data,
+        matched_skills=matched_skills,
+        weak_skills=weak_skills,
+        missing_skills=missing_skills,
+        related_partial_skills=related_partial,
+        extra_skills=extra_skills
+    )
+
+    # Compute personalized learning roadmap
+    learning_roadmap_service = LearningRoadmapService()
+    learning_roadmap = learning_roadmap_service.generate_roadmap(
+        role_key=role.role_key,
+        display_name=role.display_name,
+        seniority=role.seniority or "mid",
+        domain=role.domain or "software_engineering",
+        gap_analysis=gap_analysis,
+        resume_data=resume_data
+    )
+
     analysis_id = str(uuid.uuid4())
     analysis_record = AnalysisResult(
         id=analysis_id,
@@ -207,6 +239,8 @@ async def run_role_fit_with_interview(
         related_partial_skills=related_partial,
         extra_skills=extra_skills,
         gap_summary=gap_summary,
+        gap_analysis=gap_analysis,
+        learning_roadmap=learning_roadmap,
         scores=scores,
         explanations={
             "scoring_logic": "Explainable weighted multi-factor scoring model against canonical taxonomy standard.",
@@ -264,6 +298,9 @@ async def run_role_fit_with_interview(
         "extra_skills": extra_skills,
         "coverage_ratio": coverage_ratio,
         "gap_summary": gap_summary,
+        "gap_analysis": gap_analysis,
+        "learning_roadmap": learning_roadmap,
+        "scores": scores,
         "interview": {
             "session_id": session_id,
             "questions": session.generated_questions
@@ -278,3 +315,94 @@ def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
     if not analysis:
         raise ResourceNotFoundException("AnalysisResult", analysis_id)
     return analysis
+
+
+@router.get("/{analysis_id}/gap", response_model=SkillGapAnalysisResponse)
+def get_gap_analysis(analysis_id: str, db: Session = Depends(get_db)):
+    """
+    Returns the role-aware, resume-grounded, explainable skill gap analysis.
+    """
+    repo = AnalysisRepository(db)
+    analysis = repo.get(analysis_id)
+    if not analysis:
+        raise ResourceNotFoundException("AnalysisResult", analysis_id)
+
+    if analysis.gap_analysis and "skill_gap_details" in analysis.gap_analysis:
+        return analysis.gap_analysis
+
+    # Regenerate if not stored
+    resume_data = analysis.resume.parsed_json if analysis.resume else {}
+    role_key = analysis.role_key or "backend_developer"
+    role_repo = RoleProfileRepository(db)
+    role = role_repo.get_by_role_key(role_key)
+    if not role:
+        role = RoleProfileLoader(db).get_role_by_key(role_key)
+
+    req_skills = role.required_skills if role else []
+    pref_skills = role.preferred_skills if role else []
+    display_name = role.display_name if role else (analysis.target_role or "Software Engineer")
+    seniority = role.seniority if role else "mid"
+    domain = role.domain if role else "software_engineering"
+
+    gap_service = SkillGapService()
+    gap_result = gap_service.analyze_skill_gaps(
+        role_key=role_key,
+        display_name=display_name,
+        seniority=seniority,
+        domain=domain,
+        required_skills=req_skills,
+        preferred_skills=pref_skills,
+        resume_data=resume_data,
+        matched_skills=analysis.matched_skills or [],
+        weak_skills=analysis.weak_skills or [],
+        missing_skills=analysis.missing_skills or [],
+        related_partial_skills=analysis.related_partial_skills or [],
+        extra_skills=analysis.extra_skills or []
+    )
+    analysis.gap_analysis = gap_result
+    db.commit()
+    return gap_result
+
+
+@router.get("/{analysis_id}/roadmap", response_model=PersonalizedRoadmapResponse)
+def get_learning_roadmap(analysis_id: str, db: Session = Depends(get_db)):
+    """
+    Returns the personalized learning roadmap focused on the candidate's missing/weak skills.
+    """
+    repo = AnalysisRepository(db)
+    analysis = repo.get(analysis_id)
+    if not analysis:
+        raise ResourceNotFoundException("AnalysisResult", analysis_id)
+
+    if analysis.learning_roadmap and "learning_roadmap" in analysis.learning_roadmap:
+        return analysis.learning_roadmap
+
+    gap = analysis.gap_analysis
+    if not gap or "skill_gap_details" not in gap:
+        gap = get_gap_analysis(analysis_id, db)
+        if hasattr(gap, "model_dump"):
+            gap = gap.model_dump()
+
+    resume_data = analysis.resume.parsed_json if analysis.resume else {}
+    role_key = analysis.role_key or "backend_developer"
+    role_repo = RoleProfileRepository(db)
+    role = role_repo.get_by_role_key(role_key)
+    if not role:
+        role = RoleProfileLoader(db).get_role_by_key(role_key)
+
+    display_name = role.display_name if role else (analysis.target_role or "Software Engineer")
+    seniority = role.seniority if role else "mid"
+    domain = role.domain if role else "software_engineering"
+
+    roadmap_service = LearningRoadmapService()
+    roadmap_result = roadmap_service.generate_roadmap(
+        role_key=role_key,
+        display_name=display_name,
+        seniority=seniority,
+        domain=domain,
+        gap_analysis=gap if isinstance(gap, dict) else dict(gap),
+        resume_data=resume_data
+    )
+    analysis.learning_roadmap = roadmap_result
+    db.commit()
+    return roadmap_result

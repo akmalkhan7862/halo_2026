@@ -40,6 +40,11 @@ def test_role_fit_with_interview_unified_workflow():
     assert "coverage_ratio" in data
     assert 0.0 <= data["coverage_ratio"] <= 1.0
 
+    assert "scores" in data
+    assert "overall_score" in data["scores"]
+    assert "overall_breakdown" in data["scores"]
+    assert len(data["scores"]["overall_breakdown"]) >= 2
+
     gap = data["gap_summary"]
     assert "overall_fit" in gap
     assert "narrative_summary" in gap
@@ -55,6 +60,8 @@ def test_role_fit_with_interview_unified_workflow():
     for q in questions:
         assert "question_id" in q
         assert "question_text" in q
+        assert "resume_evidence" in q
+        assert "follow_up_hint" in q
 
     # 3. Submit an answer to Q1
     q1 = questions[0]
@@ -84,3 +91,23 @@ def test_role_fit_with_interview_unified_workflow():
     assert rep_data["target_job"]["title"] == "Backend Developer"
     assert "roadmap" in rep_data
     assert rep_data["interview_session"]["status"] == "completed"
+
+    # Verify separate resume_fit and interview_performance blocks
+    assert "resume_fit" in rep_data
+    assert "scores" in rep_data["resume_fit"]
+    assert "overall_resume_score" in rep_data["resume_fit"]["scores"]
+
+    assert "interview_performance" in rep_data
+    perf = rep_data["interview_performance"]
+    assert "overall_interview_score" in perf
+    assert "dimension_scores" in perf
+    assert "technical_accuracy" in perf["dimension_scores"]
+    assert "relevance" in perf["dimension_scores"]
+    assert "completeness" in perf["dimension_scores"]
+    assert "structure_and_clarity" in perf["dimension_scores"]
+    assert "communication" in perf["dimension_scores"]
+    assert "key_strengths" in perf
+    assert len(perf["key_strengths"]) > 0
+    assert "key_weaknesses" in perf
+    assert "recommendations" in perf
+    assert "communication_feedback" in perf

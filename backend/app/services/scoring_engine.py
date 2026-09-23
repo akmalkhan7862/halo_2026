@@ -31,8 +31,16 @@ class ScoringEngineService:
             total_weight += multiplier
             earned_weight += multiplier
             impact_val = int(multiplier * 6)
+            evidence = item.get("evidence_citation") or item.get("raw_text")
+            reason_text = f"Matched {item.get('importance')} skill '{item.get('canonical_skill')}'"
+            if evidence:
+                # Clean citation text snippet
+                clean_ev = str(evidence).strip().replace("\n", " ")[:60]
+                reason_text += f" (evidenced by: '{clean_ev}')"
+            else:
+                reason_text += " with verified resume citation"
             breakdown.append({
-                "reason": f"Matched {item.get('importance')} skill '{item.get('canonical_skill')}' with concrete evidence",
+                "reason": reason_text,
                 "impact": f"+{impact_val}"
             })
 
@@ -42,7 +50,7 @@ class ScoringEngineService:
             earned_weight += multiplier * 0.65  # partial credit
             impact_val = int(multiplier * 4)
             breakdown.append({
-                "reason": f"Transferable skill '{item.get('related_to')}' bridges '{item.get('canonical_skill')}'",
+                "reason": f"Transferable skill '{item.get('related_to')}' bridges required '{item.get('canonical_skill')}'",
                 "impact": f"+{impact_val}"
             })
 
@@ -52,20 +60,20 @@ class ScoringEngineService:
             earned_weight += multiplier * 0.50  # weak credit
             impact_val = int(multiplier * 3)
             breakdown.append({
-                "reason": f"Skill '{item.get('canonical_skill')}' is listed without experiential backing",
+                "reason": f"Skill '{item.get('canonical_skill')}' listed in resume but lacks verified project or experience bullets",
                 "impact": f"+{impact_val}"
             })
-            recommendations.append(f"Back up '{item.get('canonical_skill')}' with specific project outcomes.")
+            recommendations.append(f"Demonstrate hands-on production application of '{item.get('canonical_skill')}' in project bullets.")
 
         for item in missing_skills:
             multiplier = 2.0 if item.get("importance") == "required" else 1.0
             total_weight += multiplier
             impact_val = int(multiplier * 5)
             breakdown.append({
-                "reason": f"Missing {item.get('importance')} skill '{item.get('canonical_skill')}'",
+                "reason": f"Missing critical {item.get('importance')} role requirement: '{item.get('canonical_skill')}'",
                 "impact": f"-{impact_val}"
             })
-            recommendations.append(f"Gain foundational exposure to '{item.get('canonical_skill')}'.")
+            recommendations.append(f"Acquire foundational experience or certifications in '{item.get('canonical_skill')}'.")
 
         raw_score = (earned_weight / max(total_weight, 1.0)) * 100.0
         final_score = round(min(max(raw_score, 10.0), 100.0), 1)
@@ -96,16 +104,24 @@ class ScoringEngineService:
 
         score = 50.0
 
+        exp_titles = [
+            f"{e.get('job_title', 'Engineer')} at {e.get('organization', 'Company')}"
+            for e in resume_experience
+            if e.get('job_title') or e.get('organization')
+        ]
+
         if exp_entries_count > 0:
-            score += min(exp_entries_count * 12.0, 30.0)
+            bonus = min(exp_entries_count * 12.0, 30.0)
+            score += bonus
+            titles_sample = ", ".join(exp_titles[:2]) if exp_titles else f"{exp_entries_count} roles"
             breakdown.append({
-                "reason": f"Resume records {exp_entries_count} professional experience entries",
-                "impact": f"+{int(min(exp_entries_count * 12, 30))}"
+                "reason": f"Verified {exp_entries_count} professional role(s) ({titles_sample})",
+                "impact": f"+{int(bonus)}"
             })
         else:
             score -= 25.0
             breakdown.append({
-                "reason": "No formal industry experience entries detected",
+                "reason": "No formal industry experience entries detected on resume",
                 "impact": "-25"
             })
             recommendations.append("Highlight open-source contributions or freelance internships as formal experience.")
@@ -127,7 +143,7 @@ class ScoringEngineService:
         else:
             score += 15.0
             breakdown.append({
-                "reason": "Job description does not specify strict minimum years of experience",
+                "reason": "Job profile establishes flexible baseline without strict minimum tenure barrier",
                 "impact": "+15"
             })
 
@@ -151,18 +167,21 @@ class ScoringEngineService:
         recommendations: List[str] = []
 
         proj_count = len(resume_projects)
+        proj_titles = [p.get("title") for p in resume_projects if p.get("title")]
         score = 40.0
 
         if proj_count >= 3:
             score += 25.0
+            sample_titles = ", ".join([f"'{t}'" for t in proj_titles[:2]])
             breakdown.append({
-                "reason": f"Candidate demonstrates {proj_count} detailed project portfolios",
+                "reason": f"Candidate demonstrates {proj_count} detailed project portfolios (e.g. {sample_titles})",
                 "impact": "+25"
             })
         elif proj_count > 0:
             score += 15.0
+            first_title = proj_titles[0] if proj_titles else "technical build"
             breakdown.append({
-                "reason": f"Candidate documents {proj_count} project portfolio entry",
+                "reason": f"Candidate documents {proj_count} project portfolio entry ('{first_title}')",
                 "impact": "+15"
             })
         else:
@@ -184,13 +203,13 @@ class ScoringEngineService:
         if quantified_count > 0:
             score += 20.0
             breakdown.append({
-                "reason": f"{quantified_count} project(s) cite measurable engineering metrics/outcomes",
+                "reason": f"{quantified_count} project(s) cite measurable latency, throughput, or user scale metrics",
                 "impact": "+20"
             })
         else:
             score -= 10.0
             breakdown.append({
-                "reason": "Projects lack quantified performance or business outcome metrics",
+                "reason": "Projects lack quantified performance, scale, or business outcome metrics",
                 "impact": "-10"
             })
             recommendations.append("Incorporate specific numbers (e.g., 'reduced query latency by 45%', 'supported 10k users').")
@@ -246,17 +265,19 @@ class ScoringEngineService:
         ratio = len(matched_kw) / max(len(jd_keywords), 1)
         score = round(ratio * 100.0, 1)
 
+        matched_sample = ", ".join(matched_kw[:3]) if matched_kw else "None"
         breakdown.append({
-            "reason": f"Resume incorporates {len(matched_kw)} of {len(jd_keywords)} essential role keywords",
+            "reason": f"Resume incorporates {len(matched_kw)} of {len(jd_keywords)} essential role keywords (e.g. {matched_sample})",
             "impact": f"+{int(score * 0.8)}"
         })
 
         if missing_kw:
+            missing_sample = ", ".join(missing_kw[:3])
             breakdown.append({
-                "reason": f"Keywords absent: {', '.join(missing_kw[:4])}",
+                "reason": f"Key target keywords absent: {missing_sample}",
                 "impact": f"-{int((1.0 - ratio) * 40)}"
             })
-            recommendations.append(f"Weave missing keywords ({', '.join(missing_kw[:3])}) into project and experience summaries.")
+            recommendations.append(f"Weave missing keywords ({missing_sample}) into project and experience summaries.")
 
         final_score = round(min(max(score, 15.0), 100.0), 1)
 
@@ -291,8 +312,9 @@ class ScoringEngineService:
         if detected_leadership:
             bonus = min(len(detected_leadership) * 6.0, 25.0)
             score += bonus
+            verbs_str = ", ".join(detected_leadership[:3])
             breakdown.append({
-                "reason": f"Demonstrates strong ownership verbs ({', '.join(detected_leadership[:3])})",
+                "reason": f"Demonstrates strong ownership and architecture phrasing (e.g. {verbs_str})",
                 "impact": f"+{int(bonus)}"
             })
 
@@ -368,8 +390,48 @@ class ScoringEngineService:
         )
         overall_score = round(min(max(overall, 10.0), 100.0), 1)
 
+        # Synthesize 2-4 high-level drivers summarizing positive strengths and blockers
+        overall_breakdown: List[Dict[str, str]] = []
+
+        if matched_skills:
+            top_matched = ", ".join([m.get("canonical_skill", "") for m in matched_skills[:3]])
+            overall_breakdown.append({
+                "reason": f"Verified competency across {len(matched_skills)} core role requirements ({top_matched})",
+                "impact": f"+{int(skill_score_obj['score'] * self.w_skill)}"
+            })
+
+        if proj_score_obj["score"] >= 65:
+            overall_breakdown.append({
+                "reason": "Strong engineering portfolio demonstrates relevant production technologies and outcomes",
+                "impact": f"+{int(proj_score_obj['score'] * self.w_proj)}"
+            })
+        else:
+            overall_breakdown.append({
+                "reason": "Project portfolio lacks demonstrated production scale, metrics, or target stack alignment",
+                "impact": f"-{int((100 - proj_score_obj['score']) * self.w_proj)}"
+            })
+
+        if exp_score_obj["score"] >= 70:
+            overall_breakdown.append({
+                "reason": "Professional tenure and roles satisfy target seniority expectations",
+                "impact": f"+{int(exp_score_obj['score'] * self.w_exp)}"
+            })
+        else:
+            overall_breakdown.append({
+                "reason": "Experience timeline or depth is below the target role benchmark",
+                "impact": f"-{int((100 - exp_score_obj['score']) * self.w_exp)}"
+            })
+
+        if missing_skills:
+            top_missing = ", ".join([m.get("canonical_skill", "") for m in missing_skills[:3]])
+            overall_breakdown.append({
+                "reason": f"Primary blocker: {len(missing_skills)} missing requirement(s) ({top_missing})",
+                "impact": f"-{min(len(missing_skills) * 4, 20)}"
+            })
+
         return {
             "overall_score": overall_score,
+            "overall_breakdown": overall_breakdown,
             "skill_match_score": skill_score_obj,
             "experience_score": exp_score_obj,
             "project_score": proj_score_obj,

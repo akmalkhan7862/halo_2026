@@ -20,6 +20,8 @@ class AnalysisResult(Base):
     related_partial_skills = Column(CompatibleJSON, nullable=False, default=list)
     extra_skills = Column(CompatibleJSON, nullable=False, default=list)
     gap_summary = Column(CompatibleJSON, nullable=False, default=dict)
+    gap_analysis = Column(CompatibleJSON, nullable=True, default=dict)
+    learning_roadmap = Column(CompatibleJSON, nullable=True, default=dict)
     scores = Column(CompatibleJSON, nullable=False, default=dict)
     explanations = Column(CompatibleJSON, nullable=False, default=dict)
     provenance = Column(CompatibleJSON, nullable=True, default=dict)

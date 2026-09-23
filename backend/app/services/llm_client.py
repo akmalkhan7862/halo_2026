@@ -130,7 +130,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Clean error handling and session.rollback() in try-finally blocks",
                         "Separation of concerns between routers and repository layers"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Ask how connection leaks are monitored and detected before causing cascading timeout failures."
                 },
                 {
                     "question_id": "q2",
@@ -145,7 +146,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Cost metrics and execution buffers",
                         "Avoiding redundant indexes that slow writes"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Inquire how they detect table bloat and tune autovacuum on high-write tables."
                 },
                 {
                     "question_id": "q3",
@@ -160,7 +162,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Rate limiting middleware",
                         "Consistent JSON error schema"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Ask about refresh token revocation and replay attack protection strategies."
                 },
                 {
                     "question_id": "q4",
@@ -175,7 +178,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Running container as non-root user",
                         "Using lightweight alpine or distroless/slim base images"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Probe on scanning container images for vulnerabilities in CI using Trivy or Grype."
                 },
                 {
                     "question_id": "q5",
@@ -190,7 +194,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Token bucket or sliding window rate limiting",
                         "Graceful degradation and asynchronous acknowledgment"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Ask how they handle message ordering and idempotency when consumers retry failed jobs."
                 },
                 {
                     "question_id": "q6",
@@ -205,7 +210,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Rolling update strategy and zero-downtime deployments",
                         "Handling SIGTERM for graceful shutdown"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Ask how they prevent OOMKilled errors on pods under unexpected memory pressure."
                 },
                 {
                     "question_id": "q7",
@@ -220,7 +226,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Immediate mitigation vs long-term architectural fix",
                         "Preventative automated tests or guardrails"
                     ],
-                    "follow_up_possible": False
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Ask what concrete process guardrail they introduced to prevent recurrence."
                 },
                 {
                     "question_id": "q8",
@@ -235,7 +242,8 @@ class DeterministicMockLLMClient(BaseLLMClient):
                         "Mocking third-party HTTP dependencies with responses or wiremock",
                         "Deterministic test data factories"
                     ],
-                    "follow_up_possible": True
+                    "follow_up_possible": True,
+                    "follow_up_hint": "Ask how they manage database migrations and fixtures cleanly in continuous integration."
                 }
             ]
         }
@@ -245,6 +253,13 @@ class DeterministicMockLLMClient(BaseLLMClient):
             "question_id": "evaluated_q",
             "score": 82,
             "verdict": "good",
+            "dimension_scores": {
+                "technical_accuracy": 82,
+                "relevance": 85,
+                "completeness": 78,
+                "structure_and_clarity": 80,
+                "communication": 84
+            },
             "strengths": [
                 "Directly answered the question with clear technical terminology",
                 "Demonstrated sound understanding of core architectural principles",

@@ -22,6 +22,7 @@ class InterviewQuestionItem(BaseModel):
     question_text: str
     expected_answer_points: List[str] = Field(default_factory=list)
     follow_up_possible: Optional[bool] = True
+    follow_up_hint: Optional[str] = None
 
 
 class InterviewSessionEmbedded(BaseModel):
@@ -55,4 +56,7 @@ class RoleFitInterviewResponse(BaseModel):
     extra_skills: List[str] = Field(default_factory=list)
     coverage_ratio: float
     gap_summary: Dict[str, Any]
+    gap_analysis: Optional[Dict[str, Any]] = None
+    learning_roadmap: Optional[Dict[str, Any]] = None
+    scores: Optional[Dict[str, Any]] = None
     interview: Dict[str, Any]

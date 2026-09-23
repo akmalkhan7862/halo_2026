@@ -54,10 +54,20 @@ class AnswerEvaluatorService:
         if verdict not in ["exceptional", "good", "adequate", "weak", "unsatisfactory"]:
             verdict = "adequate" if score >= 60 else "weak"
 
+        raw_dims = evaluation.get("dimension_scores") or {}
+        dimension_scores = {
+            "technical_accuracy": int(raw_dims.get("technical_accuracy", score)),
+            "relevance": int(raw_dims.get("relevance", min(100, score + 4))),
+            "completeness": int(raw_dims.get("completeness", max(0, score - (8 if evaluation.get("missing_points") else 0)))),
+            "structure_and_clarity": int(raw_dims.get("structure_and_clarity", score)),
+            "communication": int(raw_dims.get("communication", score))
+        }
+
         return {
             "question_id": question.get("question_id", "q"),
             "score": score,
             "verdict": verdict,
+            "dimension_scores": dimension_scores,
             "strengths": evaluation.get("strengths", ["Addressed core premise of the question."]),
             "weaknesses": evaluation.get("weaknesses", []),
             "missing_points": evaluation.get("missing_points", []),

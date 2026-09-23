@@ -43,6 +43,11 @@ def test_scoring_engine_breakdown_and_weights():
 
     assert "overall_score" in scores
     assert 0.0 <= scores["overall_score"] <= 100.0
+    assert "overall_breakdown" in scores
+    assert len(scores["overall_breakdown"]) >= 2
+    for b in scores["overall_breakdown"]:
+        assert "reason" in b
+        assert "impact" in b
 
     for metric in ["skill_match_score", "experience_score", "project_score", "keyword_score", "seniority_score"]:
         assert metric in scores

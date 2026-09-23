@@ -70,3 +70,23 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def ensure_sqlite_columns():
+    if settings.DATABASE_URL.startswith("sqlite"):
+        try:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                res = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='analysis_results'")).fetchone()
+                if res:
+                    col_res = conn.execute(text("PRAGMA table_info(analysis_results)"))
+                    existing_cols = {row[1] for row in col_res.fetchall()}
+                    if "gap_analysis" not in existing_cols:
+                        conn.execute(text("ALTER TABLE analysis_results ADD COLUMN gap_analysis JSON DEFAULT '{}'"))
+                    if "learning_roadmap" not in existing_cols:
+                        conn.execute(text("ALTER TABLE analysis_results ADD COLUMN learning_roadmap JSON DEFAULT '{}'"))
+                    conn.commit()
+        except Exception:
+            pass
+
+ensure_sqlite_columns()

@@ -123,6 +123,7 @@ export interface ComponentScore {
 
 export interface OverallScores {
   overall_score: number;
+  overall_breakdown?: ScoreBreakdownItem[];
   skill_match_score: ComponentScore;
   experience_score: ComponentScore;
   project_score: ComponentScore;
@@ -142,6 +143,8 @@ export interface AnalysisRecord {
   related_partial_skills: SkillClassificationItem[];
   extra_skills: string[];
   gap_summary: GapSummary;
+  gap_analysis?: SkillGapAnalysis;
+  learning_roadmap?: PersonalizedRoadmap;
   scores: OverallScores;
   explanations: Record<string, any>;
   provenance: Record<string, any>;
@@ -157,6 +160,7 @@ export interface InterviewQuestion {
   question_text: string;
   expected_answer_points: string[];
   follow_up_possible: boolean;
+  follow_up_hint?: string;
 }
 
 export interface AnswerEvaluation {
@@ -223,6 +227,56 @@ export interface CareerRoadmap {
   interview_preparation_focus_areas: string[];
 }
 
+export interface ResumeFitScores {
+  skill_match_score: number;
+  experience_score: number;
+  project_score: number;
+  keyword_score: number;
+  seniority_score: number;
+  overall_resume_score: number;
+}
+
+export interface ResumeFitReport {
+  role_key?: string;
+  display_name: string;
+  scores: ResumeFitScores;
+  gap_summary: {
+    overall_fit: string;
+    narrative_summary: string;
+    top_missing_skills: string[];
+    quick_wins: string[];
+    recommended_focus_areas: string[];
+  };
+}
+
+export interface CommunicationFeedback {
+  strengths: string[];
+  improvements: string[];
+}
+
+export interface InterviewPerformanceReport {
+  overall_interview_score: number;
+  dimension_scores: {
+    technical_accuracy: number;
+    relevance: number;
+    completeness: number;
+    structure_and_clarity: number;
+    communication: number;
+  };
+  question_count: number;
+  answered_count: number;
+  score_distribution: {
+    strong: number;
+    good: number;
+    moderate: number;
+    weak: number;
+  };
+  key_strengths: string[];
+  key_weaknesses: string[];
+  recommendations: string[];
+  communication_feedback: CommunicationFeedback;
+}
+
 export interface FinalReportRecord {
   analysis_id: string;
   generated_at: string;
@@ -239,9 +293,61 @@ export interface FinalReportRecord {
     seniority: string;
     domain: string;
   };
+  resume_fit?: ResumeFitReport;
+  interview_performance?: InterviewPerformanceReport;
   analysis: AnalysisRecord;
   interview_session?: InterviewSessionRecord;
   roadmap: CareerRoadmap;
+  gap_analysis?: SkillGapAnalysis;
+  learning_roadmap?: PersonalizedRoadmap;
+}
+
+export interface SkillGapDetail {
+  skill: string;
+  importance: 'required' | 'preferred';
+  status: 'matched' | 'weak' | 'missing' | 'related_partial';
+  evidence: string[];
+  explanation: string;
+  related_to?: string;
+}
+
+export interface SkillGapAnalysis {
+  role_key: string;
+  display_name: string;
+  coverage_ratio: number;
+  required_coverage: number;
+  preferred_coverage: number;
+  skill_gap_details: SkillGapDetail[];
+  critical_missing_skills: string[];
+  quick_wins: string[];
+  gap_narrative: string;
+}
+
+export interface RoadmapResource {
+  type: 'course' | 'docs' | 'book' | 'tutorial' | string;
+  title: string;
+  url: string;
+}
+
+export interface PrioritySkillRoadmap {
+  skill: string;
+  why_it_matters: string;
+  resources: RoadmapResource[];
+  project_task: string;
+  estimated_effort: string;
+  success_criteria: string[];
+}
+
+export interface LearningRoadmapContent {
+  priority_skills: PrioritySkillRoadmap[];
+  suggested_sequence: string[];
+  general_advice: string[];
+}
+
+export interface PersonalizedRoadmap {
+  role_key: string;
+  display_name: string;
+  learning_roadmap: LearningRoadmapContent;
 }
 
 export interface TargetRoleSummary {
@@ -271,6 +377,9 @@ export interface RoleFitInterviewResponse {
   extra_skills: string[];
   coverage_ratio: number;
   gap_summary: GapSummary;
+  gap_analysis?: SkillGapAnalysis;
+  learning_roadmap?: PersonalizedRoadmap;
+  scores?: OverallScores;
   interview: {
     session_id: string;
     questions: InterviewQuestion[];

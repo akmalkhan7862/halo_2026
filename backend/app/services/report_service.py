@@ -5,6 +5,8 @@ from jinja2 import Template
 
 from app.core.config import settings
 from app.services.llm_client import BaseLLMClient
+from app.services.interview_scorer import InterviewScorerService
+from app.services.interview_insights import InterviewInsightsService
 from app.utils.pdf_generator import generate_report_pdf
 from app.utils.logger import logger
 
@@ -78,6 +80,75 @@ class ReportService:
             interview_weaknesses=interview_weaknesses[:5]
         )
 
+        # Calculate interview performance using actual answer evaluations
+        answers_list = interview_session_data.get("answers", []) if interview_session_data else []
+        total_q = interview_session_data.get("question_count", 8) if interview_session_data else 8
+
+        scorer = InterviewScorerService()
+        scoring_res = scorer.score_session(answers_list, total_questions=total_q)
+
+        role_meta = {
+            "title": jd_data.get("job_title") or analysis_data.get("target_role") or "Software Engineer",
+            "display_name": analysis_data.get("target_role") or jd_data.get("job_title") or "Software Engineer",
+            "seniority": jd_data.get("seniority", "mid"),
+            "domain": jd_data.get("domain", "software_engineering")
+        }
+
+        insights_service = InterviewInsightsService(self.llm_client)
+        insights = await insights_service.generate_insights(
+            answers=answers_list,
+            role_metadata=role_meta,
+            dimension_scores=scoring_res["dimension_scores"]
+        )
+
+        interview_performance = {
+            "overall_interview_score": scoring_res["overall_interview_score"],
+            "dimension_scores": scoring_res["dimension_scores"],
+            "question_count": scoring_res["question_count"],
+            "answered_count": scoring_res["answered_count"],
+            "score_distribution": scoring_res["score_distribution"],
+            "key_strengths": insights["key_strengths"],
+            "key_weaknesses": insights["key_weaknesses"],
+            "recommendations": insights["recommendations"],
+            "communication_feedback": insights["communication_feedback"]
+        }
+
+        # Update interview session record summary feedback to stay in sync
+        if interview_session_data:
+            interview_session_data["overall_score"] = scoring_res["overall_interview_score"]
+            interview_session_data["summary_feedback"] = {
+                "overall_score": scoring_res["overall_interview_score"],
+                "dimension_scores": scoring_res["dimension_scores"],
+                "score_distribution": scoring_res["score_distribution"],
+                "key_strengths": insights["key_strengths"],
+                "areas_to_improve": insights["key_weaknesses"],
+                "recommendations": insights["recommendations"],
+                "communication_feedback": insights["communication_feedback"]
+            }
+
+        # Structure separate resume_fit block
+        gap = analysis_data.get("gap_summary", {})
+        scores_obj = analysis_data.get("scores", {})
+        resume_fit = {
+            "role_key": analysis_data.get("role_key"),
+            "display_name": analysis_data.get("target_role") or jd_data.get("job_title") or "Target Role",
+            "scores": {
+                "skill_match_score": scores_obj.get("skill_match_score", {}).get("score", 0.0) if isinstance(scores_obj.get("skill_match_score"), dict) else float(scores_obj.get("skill_match_score", 0.0)),
+                "experience_score": scores_obj.get("experience_score", {}).get("score", 0.0) if isinstance(scores_obj.get("experience_score"), dict) else float(scores_obj.get("experience_score", 0.0)),
+                "project_score": scores_obj.get("project_score", {}).get("score", 0.0) if isinstance(scores_obj.get("project_score"), dict) else float(scores_obj.get("project_score", 0.0)),
+                "keyword_score": scores_obj.get("keyword_score", {}).get("score", 0.0) if isinstance(scores_obj.get("keyword_score"), dict) else float(scores_obj.get("keyword_score", 0.0)),
+                "seniority_score": scores_obj.get("seniority_score", {}).get("score", 0.0) if isinstance(scores_obj.get("seniority_score"), dict) else float(scores_obj.get("seniority_score", 0.0)),
+                "overall_resume_score": float(scores_obj.get("overall_score", 0.0))
+            },
+            "gap_summary": {
+                "overall_fit": gap.get("overall_fit") or gap.get("overall_readiness", "moderate"),
+                "narrative_summary": gap.get("narrative_summary", ""),
+                "top_missing_skills": gap.get("top_missing_skills") or gap.get("critical_missing_skills", []),
+                "quick_wins": gap.get("quick_wins", []),
+                "recommended_focus_areas": gap.get("recommended_focus_areas", [])
+            }
+        }
+
         report = {
             "analysis_id": analysis_data.get("id"),
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -94,9 +165,13 @@ class ReportService:
                 "seniority": jd_data.get("seniority"),
                 "domain": jd_data.get("domain")
             },
+            "resume_fit": resume_fit,
+            "interview_performance": interview_performance,
             "analysis": analysis_data,
             "interview_session": interview_session_data,
-            "roadmap": roadmap
+            "roadmap": roadmap,
+            "gap_analysis": analysis_data.get("gap_analysis") or {},
+            "learning_roadmap": analysis_data.get("learning_roadmap") or {}
         }
         return report
 

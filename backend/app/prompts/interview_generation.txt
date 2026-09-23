@@ -48,15 +48,16 @@ STRICT RULES:
       "type": "technical",
       "difficulty": "medium",
       "skill_focus": ["Python", "FastAPI"],
-      "resume_evidence": "Candidate built REST APIs in FastAPI with PostgreSQL",
-      "question_text": "In your FastAPI backend project, how did you structure database session management and handle concurrent transactions under high load?",
+      "resume_evidence": "Candidate built REST APIs in FastAPI with PostgreSQL in project 'OrderHub'",
+      "question_text": "In your FastAPI backend project 'OrderHub', how did you structure database session management and handle concurrent transactions under high load?",
       "expected_answer_points": [
         "Connection pooling and async sessions",
         "Dependency injection with yield",
         "Transaction rollback on error",
         "Performance optimization"
       ],
-      "follow_up_possible": true
+      "follow_up_possible": true,
+      "follow_up_hint": "Ask how they handle connection leaks or deadlock retries under burst traffic."
     }
   ]
 }

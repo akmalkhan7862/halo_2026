@@ -47,6 +47,7 @@ class ComponentScoreSchema(BaseModel):
 
 class OverallScoresSchema(BaseModel):
     overall_score: float
+    overall_breakdown: Optional[List[ScoreBreakdownItem]] = Field(default_factory=list)
     skill_match_score: ComponentScoreSchema
     experience_score: ComponentScoreSchema
     project_score: ComponentScoreSchema
@@ -66,6 +67,8 @@ class AnalysisResponse(BaseModel):
     related_partial_skills: List[SkillClassificationItem] = Field(default_factory=list)
     extra_skills: List[str] = Field(default_factory=list)
     gap_summary: GapSummarySchema
+    gap_analysis: Optional[Dict[str, Any]] = None
+    learning_roadmap: Optional[Dict[str, Any]] = None
     scores: OverallScoresSchema
     explanations: Dict[str, Any] = Field(default_factory=dict)
     provenance: Dict[str, Any] = Field(default_factory=dict)

@@ -24,6 +24,13 @@ Return strictly a valid JSON object matching this schema:
   "question_id": "{{ question_id }}",
   "score": 75,
   "verdict": "good",
+  "dimension_scores": {
+    "technical_accuracy": 75,
+    "relevance": 80,
+    "completeness": 70,
+    "structure_and_clarity": 75,
+    "communication": 75
+  },
   "strengths": [
     "Clearly explained dependency injection in FastAPI",
     "Addressed transaction rollbacks properly"
@@ -42,3 +49,4 @@ Return strictly a valid JSON object matching this schema:
 
 Verdicts allowed: "exceptional", "good", "adequate", "weak", "unsatisfactory".
 Score must be an integer between 0 and 100.
+Dimension scores must each be integers between 0 and 100.

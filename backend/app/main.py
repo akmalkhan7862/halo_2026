@@ -34,6 +34,21 @@ async def lifespan(app: FastAPI):
     # Initialize DB tables on startup
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)
+
+    # Safe column migration for analysis_results
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            if engine.dialect.name == "sqlite":
+                res = conn.execute(text("PRAGMA table_info(analysis_results)"))
+                existing_cols = {row[1] for row in res.fetchall()}
+                if "gap_analysis" not in existing_cols:
+                    conn.execute(text("ALTER TABLE analysis_results ADD COLUMN gap_analysis JSON DEFAULT '{}'"))
+                if "learning_roadmap" not in existing_cols:
+                    conn.execute(text("ALTER TABLE analysis_results ADD COLUMN learning_roadmap JSON DEFAULT '{}'"))
+                conn.commit()
+    except Exception as e:
+        logger.warning(f"Note on column migration: {e}")
     
     # Auto-seed initial benchmark taxonomy if empty
     try:

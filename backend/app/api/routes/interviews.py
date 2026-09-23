@@ -129,10 +129,19 @@ async def submit_answer(
     return evaluation
 
 
+from app.services.interview_scorer import InterviewScorerService
+from app.services.interview_insights import InterviewInsightsService
+
+
 @router.post("/{interview_id}/complete", response_model=InterviewCompleteResponse)
-def complete_interview(interview_id: str, db: Session = Depends(get_db)):
+async def complete_interview(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    llm_client: BaseLLMClient = Depends(get_llm)
+):
     """
-    Finalizes the interview session, aggregates answer scores, and summarizes performance.
+    Finalizes the interview session, computes dimension-weighted scores from actual answers,
+    and synthesizes role-tailored interview strengths and recommendations.
     """
     repo = InterviewRepository(db)
     session = repo.get(interview_id)
@@ -140,46 +149,56 @@ def complete_interview(interview_id: str, db: Session = Depends(get_db)):
         raise ResourceNotFoundException("InterviewSession", interview_id)
 
     answers = repo.get_answers(interview_id)
-    if not answers:
-        scores_list = [70]
-    else:
-        scores_list = [a.score for a in answers if a.score is not None] or [70]
 
-    avg_score = int(sum(scores_list) / max(len(scores_list), 1))
-    
-    if avg_score >= 85:
+    # 1. Calculate objective interview scores via InterviewScorerService
+    scorer = InterviewScorerService()
+    scoring_result = scorer.score_session(answers, total_questions=session.question_count)
+    interview_score = scoring_result["overall_interview_score"]
+
+    # 2. Extract interview-grounded insights via InterviewInsightsService
+    role_meta = {
+        "title": session.target_role,
+        "display_name": session.target_role,
+        "difficulty": session.difficulty
+    }
+    insights_service = InterviewInsightsService(llm_client)
+    insights = await insights_service.generate_insights(
+        answers=answers,
+        role_metadata=role_meta,
+        dimension_scores=scoring_result["dimension_scores"]
+    )
+
+    if interview_score >= 85:
         verdict = "exceptional"
-    elif avg_score >= 70:
+    elif interview_score >= 70:
         verdict = "good"
-    elif avg_score >= 55:
+    elif interview_score >= 55:
         verdict = "adequate"
     else:
         verdict = "needs_improvement"
 
     summary_feedback = {
-        "overall_score": avg_score,
+        "overall_score": interview_score,
         "verdict": verdict,
-        "total_answered": len(answers),
-        "total_questions": session.question_count,
-        "key_strengths": [
-            "Demonstrated strong technical communication and conceptual grasp.",
-            "Provided structured architectural explanations."
-        ],
-        "areas_to_improve": [
-            "Quantify specific performance benchmarks and edge cases more consistently.",
-            "Incorporate concrete production metrics into answers."
-        ]
+        "dimension_scores": scoring_result["dimension_scores"],
+        "score_distribution": scoring_result["score_distribution"],
+        "total_answered": scoring_result["answered_count"],
+        "total_questions": scoring_result["question_count"],
+        "key_strengths": insights["key_strengths"],
+        "areas_to_improve": insights["key_weaknesses"],
+        "recommendations": insights["recommendations"],
+        "communication_feedback": insights["communication_feedback"]
     }
 
     session.status = "completed"
-    session.overall_score = avg_score
+    session.overall_score = interview_score
     session.summary_feedback = summary_feedback
     repo.update(session)
 
     return {
         "interview_id": session.id,
         "status": "completed",
-        "overall_score": avg_score,
+        "overall_score": interview_score,
         "verdict": verdict,
         "summary_feedback": summary_feedback
     }

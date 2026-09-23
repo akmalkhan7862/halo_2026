@@ -19,6 +19,7 @@ class GeneratedQuestionSchema(BaseModel):
     question_text: str
     expected_answer_points: List[str] = Field(default_factory=list)
     follow_up_possible: bool = True
+    follow_up_hint: Optional[str] = None
 
 
 class AnswerSubmitRequest(BaseModel):
@@ -30,6 +31,7 @@ class AnswerEvaluationResponse(BaseModel):
     question_id: str
     score: int
     verdict: str  # exceptional, good, adequate, weak, unsatisfactory
+    dimension_scores: Optional[Dict[str, int]] = None
     strengths: List[str] = Field(default_factory=list)
     weaknesses: List[str] = Field(default_factory=list)
     missing_points: List[str] = Field(default_factory=list)

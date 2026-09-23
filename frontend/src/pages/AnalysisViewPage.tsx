@@ -24,6 +24,7 @@ export const AnalysisViewPage: React.FC = () => {
   const [loadingInterview, setLoadingInterview] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
   const [questionCount, setQuestionCount] = useState(8);
+  const [skillFilter, setSkillFilter] = useState<'all' | 'matched' | 'weak' | 'missing' | 'related'>('all');
 
   if (!analysis) {
     return (
@@ -87,6 +88,15 @@ export const AnalysisViewPage: React.FC = () => {
     }
   };
 
+  const gapAnalysis = analysis.gap_analysis;
+  const skillDetails = gapAnalysis?.skill_gap_details || [];
+  const criticalMissing = gapAnalysis?.critical_missing_skills || gap.critical_missing_skills || [];
+  const quickWins = gapAnalysis?.quick_wins || gap.quick_wins || [];
+  const narrative =
+    gapAnalysis?.gap_narrative ||
+    gap.narrative_summary ||
+    `Analysis indicates ${gap.overall_readiness} readiness for the ${analysis.target_role} position. Review the detailed skill classifications and citations below for specific evidence and gap remediation.`;
+
   const banner = getReadinessBanner(gap.overall_readiness);
 
   return (
@@ -105,9 +115,10 @@ export const AnalysisViewPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Overall Match Score */}
         <div className="flex items-center space-x-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
           <div className="text-right">
-            <div className="text-xs text-slate-400 font-bold uppercase">Overall Match Score</div>
+            <div className="text-xs text-slate-400 font-bold uppercase">Match Score</div>
             <div className="text-3xl font-black text-slate-900">{Math.round(scores.overall_score)}/100</div>
           </div>
           <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border-2 border-blue-200">
@@ -116,32 +127,79 @@ export const AnalysisViewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Executive Gap Summary Banner */}
-      <div className={`p-6 rounded-2xl border ${banner.bg} shadow-sm space-y-3`}>
+      {/* Executive Gap Summary - Single Structured Summary Paragraph at the Top */}
+      <div className={`p-6 sm:p-7 rounded-2xl border ${banner.bg} shadow-sm space-y-4`}>
         <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Executive Skill Gap Summary
+            </h3>
+          </div>
           <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${banner.badge}`}>
             {banner.label}
           </span>
-          <span className="text-xs text-slate-500 font-medium">
-            AI Talent Engine Assessment
-          </span>
         </div>
 
-        <p className="text-sm font-medium leading-relaxed">
-          {gap.narrative_summary}
+        {/* Single well-structured summary paragraph */}
+        <p className="text-sm sm:text-base font-normal leading-relaxed text-slate-800">
+          {narrative}
         </p>
 
-        {gap.critical_missing_skills.length > 0 && (
-          <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
+        {criticalMissing.length > 0 && (
+          <div className="pt-3 border-t border-slate-200/60 flex flex-wrap items-center gap-2 text-xs">
             <span className="font-bold text-slate-700">Critical Missing Requirements:</span>
-            {gap.critical_missing_skills.map((s, idx) => (
-              <span key={idx} className="bg-white/80 border border-rose-300 text-rose-800 font-semibold px-2.5 py-0.5 rounded-full">
+            {criticalMissing.map((s, idx) => (
+              <span key={idx} className="bg-white/90 border border-rose-300 text-rose-800 font-semibold px-2.5 py-0.5 rounded-full shadow-2xs">
                 {s}
               </span>
             ))}
           </div>
         )}
       </div>
+
+      {/* Overall Match Key Drivers */}
+      {scores.overall_breakdown && scores.overall_breakdown.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center">
+            <Sparkles className="w-4 h-4 mr-2 text-indigo-600" />
+            Key Match Drivers & Score Synthesis
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {scores.overall_breakdown.map((driver, idx) => {
+              const isPositive = driver.impact.startsWith('+');
+              return (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-xl border flex items-start justify-between space-x-3 text-xs ${
+                    isPositive
+                      ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                      : 'bg-rose-50/50 border-rose-200 text-rose-950'
+                  }`}
+                >
+                  <div className="flex items-start space-x-2">
+                    {isPositive ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    )}
+                    <span className="font-medium leading-relaxed">{driver.reason}</span>
+                  </div>
+                  <span
+                    className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] shrink-0 border ${
+                      isPositive
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-rose-100 text-rose-800 border-rose-300'
+                    }`}
+                  >
+                    {driver.impact}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 5-Factor Explainable Scoring Cards */}
       <div>
@@ -178,106 +236,274 @@ export const AnalysisViewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4-Way Skill Matrix */}
+      {/* Explainable Skill Gap Analysis Section */}
       <div>
-        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center">
-          <Zap className="w-4 h-4 mr-2 text-blue-600" />
-          Taxonomy Skill Matrix & Evidence (Click any skill to view citation)
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Matched */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <span className="font-bold text-xs text-slate-900 flex items-center">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 mr-1.5" />
-                Matched ({analysis.matched_skills.length})
-              </span>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                Full Credit
-              </span>
-            </div>
-            {analysis.matched_skills.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No direct matches</p>
-            ) : (
-              analysis.matched_skills.map((item, idx) => (
-                <SkillGapBadge key={idx} item={item} />
-              ))
-            )}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center">
+              <Zap className="w-4 h-4 mr-2 text-blue-600" />
+              Role-Aware Explainable Skill Gap Analysis
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Every target role skill classified with concrete resume citations and readiness impact.
+            </p>
           </div>
 
-          {/* Weak */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <span className="font-bold text-xs text-slate-900 flex items-center">
-                <AlertTriangle className="w-4 h-4 text-amber-600 mr-1.5" />
-                Weak Evidence ({analysis.weak_skills.length})
-              </span>
-              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">
-                Partial Credit
-              </span>
+          {/* Filter Tabs */}
+          {skillDetails.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs">
+              <button
+                onClick={() => setSkillFilter('all')}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                  skillFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All ({skillDetails.length})
+              </button>
+              <button
+                onClick={() => setSkillFilter('matched')}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all flex items-center ${
+                  skillFilter === 'matched'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-emerald-700'
+                }`}
+              >
+                Matched ({skillDetails.filter(d => d.status === 'matched').length})
+              </button>
+              <button
+                onClick={() => setSkillFilter('weak')}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all flex items-center ${
+                  skillFilter === 'weak'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-amber-700'
+                }`}
+              >
+                Weak ({skillDetails.filter(d => d.status === 'weak').length})
+              </button>
+              <button
+                onClick={() => setSkillFilter('missing')}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all flex items-center ${
+                  skillFilter === 'missing'
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-rose-700'
+                }`}
+              >
+                Missing ({skillDetails.filter(d => d.status === 'missing').length})
+              </button>
+              <button
+                onClick={() => setSkillFilter('related')}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all flex items-center ${
+                  skillFilter === 'related'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-indigo-700'
+                }`}
+              >
+                Transferable ({skillDetails.filter(d => d.status === 'related_partial').length})
+              </button>
             </div>
-            {analysis.weak_skills.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No weak skills</p>
-            ) : (
-              analysis.weak_skills.map((item, idx) => (
-                <SkillGapBadge key={idx} item={item} />
-              ))
-            )}
-          </div>
-
-          {/* Transferable */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <span className="font-bold text-xs text-slate-900 flex items-center">
-                <ArrowRightLeft className="w-4 h-4 text-indigo-600 mr-1.5" />
-                Transferable ({analysis.related_partial_skills.length})
-              </span>
-              <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">
-                Transferable
-              </span>
-            </div>
-            {analysis.related_partial_skills.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No transferable bridges</p>
-            ) : (
-              analysis.related_partial_skills.map((item, idx) => (
-                <SkillGapBadge key={idx} item={item} />
-              ))
-            )}
-          </div>
-
-          {/* Missing */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <span className="font-bold text-xs text-slate-900 flex items-center">
-                <XCircle className="w-4 h-4 text-rose-600 mr-1.5" />
-                Missing ({analysis.missing_skills.length})
-              </span>
-              <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">
-                Zero Credit
-              </span>
-            </div>
-            {analysis.missing_skills.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No missing requirements</p>
-            ) : (
-              analysis.missing_skills.map((item, idx) => (
-                <SkillGapBadge key={idx} item={item} />
-              ))
-            )}
-          </div>
+          )}
         </div>
+
+        {/* Detailed Cards Grid */}
+        {skillDetails.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {skillDetails
+              .filter(item => {
+                if (skillFilter === 'all') return true;
+                if (skillFilter === 'matched') return item.status === 'matched';
+                if (skillFilter === 'weak') return item.status === 'weak';
+                if (skillFilter === 'missing') return item.status === 'missing';
+                if (skillFilter === 'related') return item.status === 'related_partial';
+                return true;
+              })
+              .map((item, idx) => {
+                const isMatched = item.status === 'matched';
+                const isWeak = item.status === 'weak';
+                const isMissing = item.status === 'missing';
+                const isRelated = item.status === 'related_partial';
+
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:border-slate-300 transition-all space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-base flex items-center">
+                          {item.skill}
+                          {item.related_to && (
+                            <span className="text-[11px] font-normal text-slate-500 ml-2">
+                              via {item.related_to}
+                            </span>
+                          )}
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5 shrink-0">
+                        {/* Importance Badge */}
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                            item.importance === 'required'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          {item.importance}
+                        </span>
+
+                        {/* Status Badge */}
+                        {isMatched && (
+                          <span className="inline-flex items-center text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Matched
+                          </span>
+                        )}
+                        {isWeak && (
+                          <span className="inline-flex items-center text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Weak
+                          </span>
+                        )}
+                        {isMissing && (
+                          <span className="inline-flex items-center text-[10px] font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Missing
+                          </span>
+                        )}
+                        {isRelated && (
+                          <span className="inline-flex items-center text-[10px] font-bold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-full">
+                            <ArrowRightLeft className="w-3 h-3 mr-1" />
+                            Transferable
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Explainable Narrative Explanation */}
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {item.explanation}
+                    </p>
+
+                    {/* Resume Evidence */}
+                    {item.evidence && item.evidence.length > 0 ? (
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5 text-xs">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          Verified Resume Evidence:
+                        </span>
+                        {item.evidence.map((ev, eIdx) => (
+                          <div key={eIdx} className="flex items-start text-slate-600">
+                            <span className="text-indigo-500 mr-2 shrink-0">•</span>
+                            <span className="leading-snug">{ev}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 italic">
+                        No direct or transferable evidence found in candidate projects or experience.
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        ) : (
+          /* Fallback 4-Way Skill Matrix */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Matched */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <span className="font-bold text-xs text-slate-900 flex items-center">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 mr-1.5" />
+                  Matched ({analysis.matched_skills.length})
+                </span>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                  Full Credit
+                </span>
+              </div>
+              {analysis.matched_skills.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No direct matches</p>
+              ) : (
+                analysis.matched_skills.map((item, idx) => (
+                  <SkillGapBadge key={idx} item={item} />
+                ))
+              )}
+            </div>
+
+            {/* Weak */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <span className="font-bold text-xs text-slate-900 flex items-center">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mr-1.5" />
+                  Weak Evidence ({analysis.weak_skills.length})
+                </span>
+                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">
+                  Partial Credit
+                </span>
+              </div>
+              {analysis.weak_skills.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No weak skills</p>
+              ) : (
+                analysis.weak_skills.map((item, idx) => (
+                  <SkillGapBadge key={idx} item={item} />
+                ))
+              )}
+            </div>
+
+            {/* Transferable */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <span className="font-bold text-xs text-slate-900 flex items-center">
+                  <ArrowRightLeft className="w-4 h-4 text-indigo-600 mr-1.5" />
+                  Transferable ({analysis.related_partial_skills.length})
+                </span>
+                <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">
+                  Transferable
+                </span>
+              </div>
+              {analysis.related_partial_skills.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No transferable bridges</p>
+              ) : (
+                analysis.related_partial_skills.map((item, idx) => (
+                  <SkillGapBadge key={idx} item={item} />
+                ))
+              )}
+            </div>
+
+            {/* Missing */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <span className="font-bold text-xs text-slate-900 flex items-center">
+                  <XCircle className="w-4 h-4 text-rose-600 mr-1.5" />
+                  Missing ({analysis.missing_skills.length})
+                </span>
+                <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">
+                  Zero Credit
+                </span>
+              </div>
+              {analysis.missing_skills.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No missing requirements</p>
+              ) : (
+                analysis.missing_skills.map((item, idx) => (
+                  <SkillGapBadge key={idx} item={item} />
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Wins & Recommended Focus Areas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {gap.quick_wins && gap.quick_wins.length > 0 && (
+        {quickWins && quickWins.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center">
               <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
               Immediate Actionable Quick Wins
             </h3>
             <ul className="space-y-2 text-xs">
-              {gap.quick_wins.map((win, idx) => (
+              {quickWins.map((win, idx) => (
                 <li key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-start">
                   <span className="font-bold text-blue-600 mr-2 text-sm">✓</span>
                   <span className="text-slate-700 leading-relaxed">{win}</span>

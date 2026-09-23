@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { InterviewQuestion } from '../types';
-import { HelpCircle, Code, Users, Zap, Compass } from 'lucide-react';
+import { HelpCircle, Code, Users, Zap, Compass, FileCheck, MessageSquare, ListChecks, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface QuestionCardProps {
   question: InterviewQuestion;
@@ -9,6 +9,8 @@ interface QuestionCardProps {
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({ question, index, total }) => {
+  const [showExpected, setShowExpected] = useState(false);
+
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'technical':
@@ -52,13 +54,53 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, index, tot
       </h3>
 
       {question.resume_evidence && (
-        <div className="mb-4 bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-600">
-          <span className="font-semibold text-slate-700">Resume Grounding: </span>
-          <span>{question.resume_evidence}</span>
+        <div className="mb-3 bg-blue-50/60 border border-blue-100 rounded-lg p-3 text-xs text-blue-900 flex items-start space-x-2">
+          <FileCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold text-blue-950">Resume Grounding: </span>
+            <span className="text-blue-800">{question.resume_evidence}</span>
+          </div>
         </div>
       )}
 
-      {question.skill_focus.length > 0 && (
+      {question.follow_up_hint && (
+        <div className="mb-3 bg-slate-50 border border-slate-200/80 rounded-lg p-3 text-xs text-slate-700 flex items-start space-x-2">
+          <MessageSquare className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold text-slate-900">Interviewer Probing Hint: </span>
+            <span className="text-slate-600">{question.follow_up_hint}</span>
+          </div>
+        </div>
+      )}
+
+      {question.expected_answer_points && question.expected_answer_points.length > 0 && (
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => setShowExpected(!showExpected)}
+            className="flex items-center text-xs text-slate-500 hover:text-slate-800 font-medium"
+          >
+            <ListChecks className="w-3.5 h-3.5 mr-1 text-slate-400" />
+            <span>{showExpected ? 'Hide expected criteria' : 'View key evaluation points'}</span>
+            {showExpected ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+          </button>
+          {showExpected && (
+            <div className="mt-2 bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs">
+              <span className="font-bold text-slate-700 block mb-1">Expected Key Points:</span>
+              <ul className="space-y-1 text-slate-600">
+                {question.expected_answer_points.map((pt, i) => (
+                  <li key={i} className="flex items-start">
+                    <span className="text-blue-500 mr-1.5">•</span>
+                    <span>{pt}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {question.skill_focus && question.skill_focus.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
           <span className="text-xs text-slate-400 mr-1">Skills tested:</span>
           {question.skill_focus.map((skill, i) => (

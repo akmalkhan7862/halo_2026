@@ -205,3 +205,16 @@ export async function analyzeRoleFitWithInterview(
   return res.json();
 }
 
+export async function getSkillGapAnalysis(analysisId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/analysis/${analysisId}/gap`);
+  if (!res.ok) throw new Error('Failed to retrieve skill gap analysis');
+  return res.json();
+}
+
+export async function getLearningRoadmap(analysisId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/analysis/${analysisId}/roadmap`);
+  if (!res.ok) throw new Error('Failed to retrieve learning roadmap');
+  return res.json();
+}
+
+

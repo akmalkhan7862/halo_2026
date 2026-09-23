@@ -77,8 +77,12 @@ export const RoleSelectionPage: React.FC = () => {
         related_partial_skills: [],
         extra_skills: res.extra_skills,
         gap_summary: res.gap_summary,
-        scores: {
+        scores: res.scores || {
           overall_score: Math.round(res.coverage_ratio * 100),
+          overall_breakdown: [
+            { reason: `Matched ${res.matched_skills.length} core taxonomy skills`, impact: `+${Math.round(res.coverage_ratio * 35)}` },
+            { reason: `${res.missing_skills.length} role requirements missing from resume`, impact: `-${Math.min(res.missing_skills.length * 4, 20)}` }
+          ],
           skill_match_score: { score: Math.round(res.coverage_ratio * 100), max_score: 100, weight: 0.35, breakdown: [], recommendations: [] },
           experience_score: { score: 80, max_score: 100, weight: 0.20, breakdown: [], recommendations: [] },
           project_score: { score: 85, max_score: 100, weight: 0.20, breakdown: [], recommendations: [] },

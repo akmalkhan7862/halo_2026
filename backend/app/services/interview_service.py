@@ -92,19 +92,68 @@ class InterviewService:
         questions = llm_response.get("questions", [])
         if not questions:
             logger.warning("LLM returned empty questions array. Supplying fallback question set.")
-            questions = [
+            primary_matched = matched_skills[0].get("canonical_skill") if matched_skills else "software development"
+            secondary_matched = matched_skills[1].get("canonical_skill") if len(matched_skills) > 1 else "API design"
+            primary_missing = missing_skills[0].get("canonical_skill") if missing_skills else "Distributed Systems"
+            proj_title = resume_data.get("projects", [{}])[0].get("title", "primary project") if resume_data.get("projects") else "backend system"
+
+            q_templates = [
                 {
-                    "question_id": f"q{idx+1}",
                     "type": "technical",
-                    "difficulty": difficulty,
-                    "skill_focus": [m.get("canonical_skill") for m in matched_skills[:2]],
-                    "resume_evidence": f"Candidate cites experience in {matched_skills[0].get('canonical_skill') if matched_skills else 'software development'}",
-                    "question_text": f"How do you ensure performance, error handling, and test coverage in your {matched_skills[0].get('canonical_skill') if matched_skills else 'backend'} implementations?",
-                    "expected_answer_points": ["Error handling", "Automated tests", "Concurrency", "Optimization"],
-                    "follow_up_possible": True
+                    "skill_focus": [primary_matched],
+                    "resume_evidence": f"Candidate demonstrates {primary_matched} in recent implementations",
+                    "question_text": f"In your work with {primary_matched}, how do you manage database connection lifecycles and handle high-concurrency race conditions?",
+                    "expected_answer_points": ["Connection pooling", "Transaction isolation levels", "Async non-blocking execution", "Connection leak prevention"],
+                    "follow_up_hint": "Ask about tuning pool sizes and handling connection deadlocks."
+                },
+                {
+                    "type": "project_based",
+                    "skill_focus": [primary_matched, secondary_matched],
+                    "resume_evidence": f"Candidate documented project '{proj_title}' incorporating {primary_matched}",
+                    "question_text": f"In your project '{proj_title}', what were the most critical architecture trade-offs you made when integrating {primary_matched}?",
+                    "expected_answer_points": ["Architecture pattern chosen", "Latency and throughput trade-offs", "Data consistency guarantees", "Error recovery"],
+                    "follow_up_hint": "Probe on how they evaluated alternative architectures before finalizing the design."
+                },
+                {
+                    "type": "gap_probing",
+                    "skill_focus": [primary_missing],
+                    "resume_evidence": f"Identified as a critical missing requirement for target {target_role} role",
+                    "question_text": f"The target role requires strong proficiency in {primary_missing}. How would you architect and deploy solutions using {primary_missing} in production?",
+                    "expected_answer_points": ["Core concepts of " + primary_missing, "Deployment lifecycle", "Observability and health checks", "Security best practices"],
+                    "follow_up_hint": "Ask how their existing skills transfer to bridge this technology gap."
+                },
+                {
+                    "type": "scenario",
+                    "skill_focus": ["System Design", "Scalability"],
+                    "resume_evidence": f"Seniority requirements for {target_role}",
+                    "question_text": f"Suppose your service handles a sudden 20x traffic surge during a campaign event. How would you design rate limiting, caching, and failover to protect downstream services?",
+                    "expected_answer_points": ["Distributed rate limiting (e.g. Redis token bucket)", "Multi-layer caching strategy", "Circuit breakers and fallback responses", "Horizontal autoscaling"],
+                    "follow_up_hint": "Inquire how they avoid thundering herd problem during cache invalidation."
+                },
+                {
+                    "type": "behavioral",
+                    "skill_focus": ["Engineering Ownership", "Incident Management"],
+                    "resume_evidence": "Past engineering team and delivery responsibilities",
+                    "question_text": "Tell me about a time a production release introduced a critical regression or failed under unexpected load. How did you triage, resolve, and prevent future occurrences?",
+                    "expected_answer_points": ["Systematic log and telemetry analysis", "Rollback vs hotfix triage", "Blameless post-mortem analysis", "Automated regression tests and alerts"],
+                    "follow_up_hint": "Probe on how they maintained transparent stakeholder communication throughout the incident."
                 }
-                for idx in range(question_count)
             ]
+
+            questions = []
+            for idx in range(question_count):
+                tmpl = q_templates[idx % len(q_templates)]
+                questions.append({
+                    "question_id": f"q{idx+1}",
+                    "type": tmpl["type"],
+                    "difficulty": difficulty,
+                    "skill_focus": tmpl["skill_focus"],
+                    "resume_evidence": tmpl["resume_evidence"],
+                    "question_text": tmpl["question_text"],
+                    "expected_answer_points": tmpl["expected_answer_points"],
+                    "follow_up_possible": True,
+                    "follow_up_hint": tmpl["follow_up_hint"]
+                })
 
         # Ensure every question has valid fields
         for idx, q in enumerate(questions):
@@ -112,6 +161,8 @@ class InterviewService:
                 q["question_id"] = f"q{idx+1}"
             if "follow_up_possible" not in q:
                 q["follow_up_possible"] = True
+            if not q.get("follow_up_hint"):
+                q["follow_up_hint"] = "Probe deeper into architectural boundaries, failure recovery, or production scale constraints."
 
         return {
             "interview_plan": llm_response.get("interview_plan", {

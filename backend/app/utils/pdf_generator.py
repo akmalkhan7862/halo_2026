@@ -95,7 +95,51 @@ def generate_report_pdf(report_data: Dict[str, Any]) -> io.BytesIO:
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
     story.append(table)
-    story.append(Spacer(1, 14))
+    # Mock Interview Performance
+    interview_perf = report_data.get("interview_performance")
+    if interview_perf and interview_perf.get("answered_count", 0) > 0:
+        story.append(Paragraph("Mock Interview Performance", heading2_style))
+        story.append(Paragraph(f"<b>Overall Interview Score:</b> {interview_perf.get('overall_interview_score', 0)}/100 (Answered {interview_perf.get('answered_count', 0)}/{interview_perf.get('question_count', 0)})", body_style))
+        dims = interview_perf.get("dimension_scores", {})
+        if dims:
+            dim_table_data = [
+                [Paragraph("<b>Interview Dimension</b>", bold_label_style), Paragraph("<b>Score</b>", bold_label_style), Paragraph("<b>Weight</b>", bold_label_style)],
+                [Paragraph("Technical Accuracy", body_style), Paragraph(f"{dims.get('technical_accuracy', 0)}/100", body_style), Paragraph("35%", body_style)],
+                [Paragraph("Relevance", body_style), Paragraph(f"{dims.get('relevance', 0)}/100", body_style), Paragraph("20%", body_style)],
+                [Paragraph("Completeness", body_style), Paragraph(f"{dims.get('completeness', 0)}/100", body_style), Paragraph("20%", body_style)],
+                [Paragraph("Structure & Clarity", body_style), Paragraph(f"{dims.get('structure_and_clarity', 0)}/100", body_style), Paragraph("15%", body_style)],
+                [Paragraph("Communication", body_style), Paragraph(f"{dims.get('communication', 0)}/100", body_style), Paragraph("10%", body_style)],
+            ]
+            dim_table = Table(dim_table_data, colWidths=[200, 150, 100])
+            dim_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ]))
+            story.append(dim_table)
+            story.append(Spacer(1, 8))
+
+        k_strengths = interview_perf.get("key_strengths", [])
+        if k_strengths:
+            story.append(Paragraph("<b>Demonstrated Interview Strengths:</b>", bold_label_style))
+            for s in k_strengths:
+                story.append(Paragraph(f"• {s}", body_style))
+            story.append(Spacer(1, 6))
+
+        k_weaknesses = interview_perf.get("key_weaknesses", [])
+        if k_weaknesses:
+            story.append(Paragraph("<b>Observed Gaps & Improvement Areas:</b>", bold_label_style))
+            for w in k_weaknesses:
+                story.append(Paragraph(f"• {w}", body_style))
+            story.append(Spacer(1, 6))
+
+        recs = interview_perf.get("recommendations", [])
+        if recs:
+            story.append(Paragraph("<b>Interview Coaching Recommendations:</b>", bold_label_style))
+            for r in recs:
+                story.append(Paragraph(f"• {r}", body_style))
+            story.append(Spacer(1, 10))
 
     # Skill Gap Summary
     gap_summary = analysis_data.get("gap_summary", {})
@@ -121,6 +165,18 @@ def generate_report_pdf(report_data: Dict[str, Any]) -> io.BytesIO:
     # Career Roadmap
     roadmap = report_data.get("roadmap", {})
     story.append(Paragraph("Personalized Career Roadmap", heading2_style))
+
+    # Personalized Learning Roadmap Priority Skills
+    pers_roadmap = report_data.get("learning_roadmap", {})
+    if isinstance(pers_roadmap, dict) and "learning_roadmap" in pers_roadmap:
+        pers_roadmap = pers_roadmap["learning_roadmap"]
+    priority_skills = pers_roadmap.get("priority_skills", []) if isinstance(pers_roadmap, dict) else []
+    if priority_skills:
+        story.append(Paragraph("<b>Target Priority Skills & Project Tasks:</b>", bold_label_style))
+        for p in priority_skills[:4]:
+            skill_text = f"• <b>{p.get('skill')}</b> ({p.get('estimated_effort')}): {p.get('why_it_matters')}<br/>&nbsp;&nbsp;<b>Project Task:</b> {p.get('project_task')}"
+            story.append(Paragraph(skill_text, body_style))
+        story.append(Spacer(1, 6))
 
     immediate = roadmap.get("immediate_resume_improvements", [])
     if immediate:

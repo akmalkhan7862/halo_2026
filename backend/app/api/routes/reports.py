@@ -103,6 +103,8 @@ async def get_final_report(
         "related_partial_skills": analysis.related_partial_skills,
         "extra_skills": analysis.extra_skills,
         "gap_summary": analysis.gap_summary,
+        "gap_analysis": getattr(analysis, "gap_analysis", {}) or {},
+        "learning_roadmap": getattr(analysis, "learning_roadmap", {}) or {},
         "scores": analysis.scores,
         "explanations": analysis.explanations,
         "provenance": analysis.provenance or {},
