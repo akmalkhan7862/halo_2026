@@ -48,8 +48,10 @@ class RoleFitInterviewResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     analysis_id: str
-    role_key: str
+    mode: str = "taxonomy_role"
+    role_key: Optional[str] = None
     display_name: str
+    role_display_name: Optional[str] = None
     matched_skills: List[Dict[str, Any]] = Field(default_factory=list)
     missing_skills: List[Dict[str, Any]] = Field(default_factory=list)
     weak_skills: List[Dict[str, Any]] = Field(default_factory=list)

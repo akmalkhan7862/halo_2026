@@ -103,24 +103,30 @@ class JobDescriptionParserService:
 
         # Segment JD lines
         lines = [l.strip() for l in cleaned_text.split("\n") if l.strip()]
-        current_section = "general"
+        current_section = "required"
+        required_lines: List[str] = []
+        preferred_lines: List[str] = []
 
         for line in lines:
             line_lower = line.lower()
-            if any(h in line_lower for h in ["preferred", "nice to have", "bonus", "plus", "desired"]):
+            if any(h in line_lower for h in ["preferred", "nice to have", "bonus", "plus", "desired", "good to have", "optional"]):
                 current_section = "preferred"
-                continue
-            elif any(h in line_lower for h in ["required", "requirements", "qualifications", "must have", "what you need", "skills"]):
+            elif any(h in line_lower for h in ["required", "requirements", "qualifications", "must have", "what you need", "core skills", "minimum requirements"]):
                 current_section = "required"
-                continue
-            elif any(h in line_lower for h in ["responsibilities", "what you'll do", "what you will do", "duties"]):
+            elif any(h in line_lower for h in ["responsibilities", "what you'll do", "what you will do", "duties", "the role"]):
                 current_section = "responsibilities"
-                continue
 
-            if current_section == "responsibilities" and (line.startswith("*") or line.startswith("-")):
+            if current_section == "responsibilities":
                 responsibilities.append(re.sub(r"^[\*\-\•]\s*", "", line))
-            elif current_section in ["required", "preferred"] and (line.startswith("*") or line.startswith("-")):
+            elif current_section == "preferred":
+                preferred_lines.append(line)
                 qualifications.append(re.sub(r"^[\*\-\•]\s*", "", line))
+            else:
+                required_lines.append(line)
+                qualifications.append(re.sub(r"^[\*\-\•]\s*", "", line))
+
+        preferred_blob = " \n ".join(preferred_lines).lower()
+        required_blob = " \n ".join(required_lines).lower()
 
         # Scan text for taxonomy skills
         seen_canonical = set()
@@ -132,18 +138,17 @@ class JobDescriptionParserService:
                     continue
                 seen_canonical.add(canon)
 
-                # Check if it appears in preferred context
-                is_preferred = False
-                for p_bullet in qualifications:
-                    if re.search(pattern, p_bullet, re.IGNORECASE) and current_section == "preferred":
-                        is_preferred = True
-                        break
+                in_preferred = bool(re.search(pattern, preferred_blob))
+                in_required = bool(re.search(pattern, required_blob))
+
+                # If in preferred and not in required, mark preferred; else required
+                is_preferred = in_preferred and not in_required
 
                 skill_dict = {
                     "raw_text": canon_key,
                     "canonical_skill": canon,
                     "importance": "preferred" if is_preferred else "required",
-                    "confidence": 0.98
+                    "confidence": 0.95
                 }
                 if is_preferred:
                     preferred_skills.append(skill_dict)

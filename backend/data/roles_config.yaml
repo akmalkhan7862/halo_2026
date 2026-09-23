@@ -1,4 +1,4 @@
-target_roles:
+newtarget_roles:
   - role_key: "backend_developer"
     display_name: "Backend Developer"
     seniority: "mid"

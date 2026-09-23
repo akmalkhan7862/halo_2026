@@ -205,6 +205,30 @@ export async function analyzeRoleFitWithInterview(
   return res.json();
 }
 
+export async function analyzeManualJD(
+  resumeId: string,
+  jdText: string,
+  difficulty: string = 'medium',
+  questionCount: number = 8
+): Promise<RoleFitInterviewResponse> {
+  const res = await fetch(`${API_BASE}/analysis/manual-jd`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      resume_id: resumeId,
+      jd_text: jdText,
+      difficulty,
+      question_count: questionCount,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Manual JD analysis and interview generation failed' }));
+    throw new Error(err.detail || 'Manual JD analysis and interview generation failed');
+  }
+  return res.json();
+}
+
 export async function getSkillGapAnalysis(analysisId: string): Promise<any> {
   const res = await fetch(`${API_BASE}/analysis/${analysisId}/gap`);
   if (!res.ok) throw new Error('Failed to retrieve skill gap analysis');

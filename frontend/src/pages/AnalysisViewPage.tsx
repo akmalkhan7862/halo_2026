@@ -104,14 +104,27 @@ export const AnalysisViewPage: React.FC = () => {
       {/* Header & Target Role */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-            Step 3 of 5 • Explainable Evaluation
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Skill Gap & Fit Analysis: {analysis.target_role}
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+              Step 3 of 5 • Explainable Evaluation
+            </span>
+            <span
+              className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
+                analysis.mode === 'manual_jd'
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}
+            >
+              {analysis.mode === 'manual_jd' ? 'Custom Job Description' : 'Standard Role (ESCO / O*NET)'}
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+            Skill Gap & Fit Analysis: {analysis.target_role || analysis.role_display_name || 'Target Role'}
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Deterministic mapping against canonical ESCO & O*NET taxonomy with verified citations.
+            {analysis.mode === 'manual_jd'
+              ? 'Multi-factor evaluation matched directly against your uploaded custom Job Description.'
+              : 'Deterministic mapping against canonical ESCO & O*NET taxonomy with verified citations.'}
           </p>
         </div>
 

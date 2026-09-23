@@ -135,7 +135,9 @@ export interface AnalysisRecord {
   id: string;
   resume_id: string;
   job_description_id?: string;
-  role_key?: string;
+  role_key?: string | null;
+  mode?: 'taxonomy_role' | 'manual_jd';
+  role_display_name?: string;
   target_role: string;
   matched_skills: SkillClassificationItem[];
   weak_skills: SkillClassificationItem[];
@@ -369,8 +371,11 @@ export interface TargetRoleDetail extends TargetRoleSummary {
 
 export interface RoleFitInterviewResponse {
   analysis_id: string;
-  role_key: string;
+  mode?: 'taxonomy_role' | 'manual_jd';
+  role_key?: string | null;
   display_name: string;
+  role_display_name?: string;
+  target_role?: string;
   matched_skills: SkillClassificationItem[];
   missing_skills: SkillClassificationItem[];
   weak_skills: SkillClassificationItem[];
